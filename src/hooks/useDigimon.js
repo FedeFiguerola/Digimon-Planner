@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { fetchAllDigimon, fetchDigimonById, findEvolutionPath } from '../api/digimonApi';
+import { fetchAllDigimon, findEvolutionPath } from '../api/digimonApi';
 
 export function useDigimon() {
   const [digimon, setDigimon] = useState([]);
@@ -22,33 +22,6 @@ export function useDigimon() {
 
     loadDigimon();
   }, []);
-
-  return { digimon, loading, error };
-}
-
-export function useDigimonById(id) {
-  const [digimon, setDigimon] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
-
-  useEffect(() => {
-    if (!id) return;
-
-    async function load() {
-      try {
-        setLoading(true);
-        setError(null);
-        const data = await fetchDigimonById(id);
-        setDigimon(data);
-      } catch (err) {
-        setError(err.message);
-      } finally {
-        setLoading(false);
-      }
-    }
-
-    load();
-  }, [id]);
 
   return { digimon, loading, error };
 }
