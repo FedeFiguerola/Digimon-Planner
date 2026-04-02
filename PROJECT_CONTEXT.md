@@ -307,6 +307,5 @@ python scraper/game8/run_pipeline.py
 - **Keyboard navigation** in `DigimonSelector` (arrow keys, Enter to select)
 - **Path comparison view** — highlight differences between multiple paths side by side
 - **Filter by generation** in the selector dropdowns
-- **Persist last search** in URL query params (shareable links)
 - **Database migration** — SQLite would enable full-text search and faster queries at scale
 - **Image caching** — proxy or cache external images to avoid hotlink dependency
