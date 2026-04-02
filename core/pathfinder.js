@@ -68,7 +68,7 @@ class DigimonGraph {
     const { forward, backward } = this.graph.get(name);
     
     if (allowDeDigivolve) {
-      return [...forward, ...backward];
+      return [...new Set([...forward, ...backward])];
     }
     return forward;
   }
@@ -102,58 +102,53 @@ class DigimonGraph {
 
     // BFS queue: each item contains [currentName, [path]]
     const queue = [[startName, [startName]]];
-    
-    // Visited set: tracks nodes already processed at current level
-    const visited = new Set([startName]);
-    
+
+    // Tracks the earliest depth at which each node was first reached.
+    // A node may be enqueued by multiple parents on the SAME level (same depth),
+    // but must never be enqueued again from a deeper level — that would produce
+    // a longer path and is not a shortest path.
+    const visitedAtDepth = new Map([[startName, 0]]);
+
     // Store all shortest paths when found
     let shortestPaths = [];
     let shortestDistance = null;
 
     while (queue.length > 0) {
-      // Process all nodes at current level
-      const levelSize = queue.length;
+      const [currentName, currentPath] = queue.shift();
+      const currentDistance = currentPath.length - 1;
 
-      for (let i = 0; i < levelSize; i++) {
-        const [currentName, currentPath] = queue.shift();
-        const currentDistance = currentPath.length - 1;
+      // Once we know the shortest distance, skip anything longer.
+      // Do NOT break — siblings at the same depth still need to be processed.
+      if (shortestDistance !== null && currentDistance >= shortestDistance) {
+        continue;
+      }
 
-        // If we already found shorter paths, skip nodes at greater distance
-        if (shortestDistance !== null && currentDistance > shortestDistance) {
-          // Put the item back for next iteration (will be skipped)
-          queue.unshift([currentName, currentPath]);
+      // Get neighbors
+      const neighbors = this.getNeighbors(currentName, allowDeDigivolve);
+
+      for (const neighbor of neighbors) {
+        const newPath = [...currentPath, neighbor];
+        const newDistance = newPath.length - 1;
+
+        // Found target!
+        if (neighbor === targetName) {
+          if (shortestDistance === null) {
+            shortestDistance = newDistance;
+            shortestPaths = [newPath];
+          } else if (newDistance === shortestDistance) {
+            shortestPaths.push(newPath);
+          }
           continue;
         }
 
-        // Get neighbors
-        const neighbors = this.getNeighbors(currentName, allowDeDigivolve);
-
-        for (const neighbor of neighbors) {
-          const newPath = [...currentPath, neighbor];
-          const newDistance = newPath.length - 1;
-
-          // Found target!
-          if (neighbor === targetName) {
-            // If this is a new shortest distance, clear previous paths
-            if (shortestDistance === null) {
-              shortestDistance = newDistance;
-              shortestPaths = [newPath];
-            } else if (newDistance === shortestDistance) {
-              // Same distance, add to paths
-              shortestPaths.push(newPath);
-            }
-            // If newDistance > shortestDistance, don't add
-          } else if (shortestDistance === null && !visited.has(neighbor)) {
-            // Haven't found target yet, continue BFS
-            visited.add(neighbor);
-            queue.push([neighbor, newPath]);
-          }
+        // Only enqueue if we haven't visited this node at an earlier (shorter) depth.
+        // Visiting at the SAME depth is allowed — it means another equally-short
+        // path reaches this node and must be explored.
+        const prevDepth = visitedAtDepth.get(neighbor);
+        if (prevDepth === undefined || prevDepth === newDistance) {
+          visitedAtDepth.set(neighbor, newDistance);
+          queue.push([neighbor, newPath]);
         }
-      }
-
-      // If we found paths, we can stop (they are at smallest distance)
-      if (shortestPaths.length > 0) {
-        break;
       }
     }
 

@@ -195,6 +195,7 @@ function App() {
       <DigimonModal
         digimon={selectedDigimon}
         onClose={() => setSelectedDigimon(null)}
+        digimonList={digimon}
       />
     </div>
   );
