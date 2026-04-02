@@ -242,12 +242,15 @@ def merge_requirements(digimon_file: str, requirements_file: str,
 
 def print_statistics(stats: Dict[str, Any]):
     """Print merge statistics."""
+    total = stats['total']
+    matched = stats['matched_requirements']
+    unmatched = stats['unmatched_requirements']
     logger.info("\n" + "="*60)
     logger.info("MERGE STATISTICS")
     logger.info("="*60)
-    logger.info(f"Total Digimon:          {stats['total']}")
-    logger.info(f"Matched with data:      {stats['matched']} ({stats['matched']/stats['total']*100:.1f}%)")
-    logger.info(f"Unmatched:              {stats['unmatched']} ({stats['unmatched']/stats['total']*100:.1f}%)")
+    logger.info(f"Total Digimon:          {total}")
+    logger.info(f"Matched with data:      {matched} ({matched/total*100:.1f}%)")
+    logger.info(f"Unmatched:              {unmatched} ({unmatched/total*100:.1f}%)")
     logger.info(f"  - With requirements:  {stats['with_requirements']}")
     logger.info(f"  - Without:            {stats['without_requirements']}")
     if 'evolution_tree_updates' in stats:
