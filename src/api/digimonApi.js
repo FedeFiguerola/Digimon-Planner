@@ -16,17 +16,6 @@ export async function fetchAllDigimon() {
   }
 }
 
-export async function fetchDigimonById(id) {
-  try {
-    const response = await fetch(`${API_BASE}/digimon/${id}`);
-    if (!response.ok) throw new Error('Digimon not found');
-    return await response.json();
-  } catch (error) {
-    console.error(`Error fetching Digimon ${id}:`, error);
-    throw error;
-  }
-}
-
 export async function findEvolutionPath(from, to, allowDeDigivolve = false) {
   try {
     const response = await fetch(`${API_BASE}/path`, {

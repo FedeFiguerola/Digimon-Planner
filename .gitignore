@@ -29,9 +29,11 @@ __pycache__/
 *.pyo
 .venv/
 venv/
-scraper/game8/__pycache__/
 
-# Data — keep processed JSON, skip raw HTML and backups
+# Scraper and data scripts (pipeline tooling, not part of the app)
+scraper/
+scripts/
+
+# Data — keep only the final digimon.json
 data/raw/
-data/db/
 data/processed/*.backup
