@@ -4,7 +4,7 @@ import { PathCard } from './PathCard';
 /**
  * Display all shortest evolution paths
  */
-export function PathResults({ paths, loading, error, onDetailClick, noResults }) {
+export function PathResults({ paths, loading, error, onDetailClick, noResults, onSave, isFavorite }) {
   if (loading) {
     return (
       <div className="flex justify-center items-center py-12">
@@ -65,6 +65,8 @@ export function PathResults({ paths, loading, error, onDetailClick, noResults })
             path={path}
             onDetailClick={onDetailClick}
             index={idx}
+            onSave={onSave ? () => onSave(path) : undefined}
+            isSaved={isFavorite ? isFavorite(path) : false}
           />
         ))}
       </div>

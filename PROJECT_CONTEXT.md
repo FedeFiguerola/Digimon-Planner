@@ -12,7 +12,8 @@ Digimon Planner is a full-stack web app for players of **Digimon Story: Time Str
 - Finds ALL shortest evolution paths simultaneously (not just one)
 - Optional de-digivolution toggle (allows traversing backward edges)
 - Searchable dropdown for ~475 Digimon
-- Clickable Digimon nodes open a detail modal with full image and evolution requirements
+- Clickable Digimon nodes open a detail modal with full image, zoomable lightbox, and evolution requirements with Digimon icons
+- Favorite paths — save, persist, reload, and remove paths from a dedicated modal
 - Dark/light theme with localStorage persistence
 
 ---
@@ -48,20 +49,23 @@ core/
 ### Frontend (`src/`)
 
 ```
-main.jsx                React entry — StrictMode + ThemeProvider wrapper
-App.jsx                 Root — state orchestration, layout
-src/api/digimonApi.js   All fetch calls (single source of truth for HTTP)
-src/hooks/useDigimon.js useDigimon (auto-fetch) + useEvolutionPath (on-demand)
+main.jsx                  React entry — StrictMode + ThemeProvider wrapper
+App.jsx                   Root — state orchestration, layout
+src/api/digimonApi.js     All fetch calls (single source of truth for HTTP)
+src/hooks/
+  useDigimon.js           useDigimon (auto-fetch) + useEvolutionPath (on-demand)
+  useFavorites.js         Favorites CRUD + localStorage persistence
 src/context/
-  ThemeContext.jsx       isDark state + toggleTheme, persisted to localStorage
+  ThemeContext.jsx         isDark state + toggleTheme, persisted to localStorage
 src/components/
-  DigimonSelector.jsx   Searchable dropdown with click-outside close
-  DigimonOption.jsx     Single row in the dropdown list
-  DigimonNode.jsx       Icon + name card in a path chain; detects de-digivolution
-  PathCard.jsx          One evolution path row
-  PathResults.jsx       Results container — handles loading/error/empty states
-  ToggleSwitch.jsx      Accessible toggle for allowDeDigivolve
-  DigimonModal.jsx      Detail overlay — image, requirements, evolution paths
+  DigimonSelector.jsx     Searchable dropdown with click-outside close
+  DigimonOption.jsx       Single row in the dropdown list
+  DigimonNode.jsx         Icon + name card in a path chain; detects de-digivolution
+  PathCard.jsx            One evolution path row; includes save/remove star button
+  PathResults.jsx         Results container — handles loading/error/empty states
+  ToggleSwitch.jsx        Accessible toggle for allowDeDigivolve
+  DigimonModal.jsx        Detail overlay — zoomable image, requirements with icons
+  FavoritesModal.jsx      Favorites list — load, remove, browse saved paths
 ```
 
 ---
@@ -149,23 +153,28 @@ graph.set(name, { forward: string[], backward: string[] })
 
 ### BFS algorithm (`findShortestPaths`)
 
-Standard BFS with one extension: instead of stopping at the first path found, it continues processing the entire current BFS level to collect **all paths of equal shortest length**.
+Uses a `visitedAtDepth` Map instead of a flat visited Set. This correctly handles the case where multiple equally-short paths converge on the same intermediate node — the node is allowed to be enqueued multiple times as long as each enqueue happens at the same depth.
 
 ```
 queue = [[start, [start]]]
-visited = Set([start])
+visitedAtDepth = Map { start → 0 }
 
 while queue not empty:
-  process all nodes at current depth level
+  dequeue [current, path]
+  if shortestDistance known and depth >= shortestDistance → skip
+
   for each neighbor:
     if neighbor == target → record path, set shortestDistance
-    else if not visited → enqueue
-  if any paths found → break (entire level processed)
+    else:
+      prevDepth = visitedAtDepth.get(neighbor)
+      if prevDepth is undefined OR prevDepth == newDepth → enqueue, update map
 ```
+
+This guarantees all equally-short paths are found, including those that share intermediate nodes via different routes.
 
 ### `allowDeDigivolve` flag
 
-When `true`, `getNeighbors()` returns `[...forward, ...backward]` instead of just `forward`. This allows the BFS to traverse backward edges, enabling paths like `Agumon → Koromon → Patamon → ...`.
+When `true`, `getNeighbors()` returns `[...new Set([...forward, ...backward])]` instead of just `forward`. The `Set` deduplicates nodes that appear in both lists (e.g. a Digimon that is both a forward evolution and a mode-change source), preventing duplicate paths.
 
 ### Enriched paths
 
@@ -237,8 +246,11 @@ Response:
 3. Optionally toggles "Allow De-Digivolution"
 4. Clicks "Find Paths" → `useEvolutionPath.findPath()` calls `POST /api/path`
 5. `PathResults` renders each path as a `PathCard` containing `DigimonNode` items
-6. Clicking any `DigimonNode` sets `selectedDigimon` in `App`, opening `DigimonModal`
-7. Changing either selector clears `hasSearched`, hiding stale results
+6. Each `PathCard` has a star button — clicking saves or removes the path from favorites
+7. Clicking any `DigimonNode` sets `selectedDigimon` in `App`, opening `DigimonModal`
+8. `DigimonModal` shows the full image (click to zoom in lightbox), and evolution requirements with Digimon icons next to each name
+9. Clicking "Favorites" in the header opens `FavoritesModal` — saved paths can be loaded (restores selectors and re-runs search) or removed
+10. Changing either selector clears `hasSearched`, hiding stale results
 
 ### Key state in `App.jsx`
 
@@ -247,7 +259,33 @@ Response:
 | `selectedFrom` / `selectedTo` | Full Digimon objects from the enriched list |
 | `allowDeDigivolve` | Passed directly to the API call |
 | `hasSearched` | Guards result display — prevents showing results from a previous query |
-| `selectedDigimon` | Controls modal visibility; `null` = closed |
+| `selectedDigimon` | Controls DigimonModal visibility; `null` = closed |
+| `isFavoritesOpen` | Controls FavoritesModal visibility |
+
+### Favorites (`useFavorites.js`)
+
+Stored in `localStorage` under the key `favoritePaths`. Each entry:
+
+```js
+{
+  id: string,           // Date.now() timestamp string
+  from: string,         // Digimon name
+  to: string,           // Digimon name
+  allowDeDigivolve: boolean,
+  path: Digimon[]       // full enriched path array
+}
+```
+
+Duplicate detection uses a stable key: `"from|to|allowDeDigivolve|id1-id2-..."`. Two paths with the same endpoints but different intermediate nodes are treated as distinct favorites. The hook exposes `addFavorite`, `removeFavorite`, `isFavorite`, and `getFavoriteId`.
+
+### Modal z-index layering
+
+| Layer | z-index |
+|---|---|
+| Header | `z-40` |
+| FavoritesModal | `z-50` |
+| DigimonModal | `z-[70]` |
+| Lightbox | `z-[80]` |
 
 ### Theme
 
@@ -261,8 +299,9 @@ Response:
 - **Image URLs are external**: Both `icon` (Game8) and `image` (Grindosaur) are hotlinked. If those sites change their URLs or block hotlinking, images break. The modal has an `onError` fallback.
 - **BFS memory**: For very long paths with many branches, the queue can grow large. In practice with ~475 nodes this is not an issue.
 - **No pagination**: `GET /digimon` returns all 475 entries in one response. Fine for this dataset size.
-- **`allowDeDigivolve` can produce very long paths**: Backward edges can create cycles; the visited set prevents infinite loops but paths may be unexpectedly long.
+- **`allowDeDigivolve` can produce very long paths**: Backward edges can create cycles; the `visitedAtDepth` map prevents infinite loops but paths may be unexpectedly long.
 - **Data is static**: The JSON is generated by the scraper pipeline and committed. Updating data requires re-running the pipeline.
+- **Favorites reference enriched data**: Favorites store the full Digimon objects at save time. If `digimon.json` is updated, saved favorites will still display the old data until removed and re-saved.
 
 ---
 
@@ -270,7 +309,6 @@ Response:
 
 ### Prerequisites
 - Node.js ≥ 14
-- Python 3 + pip (only needed to re-run the scraper)
 
 ### Backend
 ```bash
@@ -292,14 +330,6 @@ npm run dev:build    # outputs to dist/
 npm run dev:preview  # serves the built dist/
 ```
 
-### Re-running the scraper (optional)
-```bash
-pip install -r requirements.txt
-python scraper/game8/run_pipeline.py --skip-links
-# or full pipeline:
-python scraper/game8/run_pipeline.py
-```
-
 ---
 
 ## 9. Future Improvements
@@ -307,5 +337,6 @@ python scraper/game8/run_pipeline.py
 - **Keyboard navigation** in `DigimonSelector` (arrow keys, Enter to select)
 - **Path comparison view** — highlight differences between multiple paths side by side
 - **Filter by generation** in the selector dropdowns
+- **Name favorites** — let users label saved paths (e.g. "My Omnimon route")
 - **Database migration** — SQLite would enable full-text search and faster queries at scale
 - **Image caching** — proxy or cache external images to avoid hotlink dependency

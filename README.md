@@ -2,7 +2,7 @@
 
 A web app for **Digimon Story: Time Stranger** that finds the shortest evolution path between any two Digimon. Select a starting Digimon and a destination, and the app instantly computes every possible shortest route using BFS pathfinding.
 
-![App Screenshot](./public/screenshot.png)
+![App Screenshot](./docs/screenshot.png)
 
 ---
 
@@ -11,7 +11,9 @@ A web app for **Digimon Story: Time Stranger** that finds the shortest evolution
 - **Shortest path finder** — computes all equally-short evolution chains simultaneously, not just one
 - **De-Digivolution toggle** — optionally allow backward evolution steps to open up new routes
 - **Searchable Digimon selector** — filter across ~475 Digimon by name in real time
-- **Detail modal** — click any Digimon in a path to see its full image, stats requirements, agent rank, and evolution methods (DNA Digivolution, Mode Change)
+- **Detail modal** — click any Digimon in a path to see its full image, stats requirements, agent rank, and evolution methods (DNA Digivolution, Mode Change) with Digimon icons
+- **Image zoom** — click the full image in the detail modal to open a fullscreen lightbox
+- **Favorite paths** — save any evolution path, persist it across sessions, and reload it instantly from the Favorites modal
 - **Dark / light theme** — persisted across sessions
 
 ---
@@ -73,7 +75,10 @@ npm run dev:preview  # serves the production build locally
 3. Optionally enable **Allow De-Digivolution** to include backward evolution steps
 4. Click **Find Paths**
 5. All shortest evolution chains are displayed as visual cards
-6. Click any Digimon icon in a path to open its **detail modal** with full image and evolution requirements
+6. Click the **★ Save** button on any path card to save it to your favorites
+7. Click any Digimon icon in a path to open its **detail modal** — full image, evolution requirements, and Digimon icons for DNA / Mode Change methods
+8. Click the image in the detail modal to open it in a **fullscreen lightbox**
+9. Click **Favorites** in the header to view, reload, or remove saved paths
 
 ---
 
@@ -85,7 +90,7 @@ digimon-planner/
 │   ├── api/              # Fetch wrappers (single HTTP layer)
 │   ├── components/       # UI components
 │   ├── context/          # Theme context
-│   ├── hooks/            # useDigimon, useEvolutionPath
+│   ├── hooks/            # useDigimon, useEvolutionPath, useFavorites
 │   └── App.jsx
 ├── app/                  # Express backend
 │   ├── routes/           # Thin route controllers
@@ -127,3 +132,10 @@ digimon-planner/
 - Digimon data was scraped from [Game8](https://game8.co) and [Grindosaur](https://www.grindosaur.com) and is stored as a static JSON file. No database is required.
 - Digimon images are hotlinked from external sources. If those URLs change, the modal falls back to a text placeholder.
 - Some Digimon have no evolution connections in the game and will return no path.
+- Favorite paths are stored in `localStorage` and persist across sessions. They store the full enriched path data at save time.
+
+---
+
+## License
+
+MIT

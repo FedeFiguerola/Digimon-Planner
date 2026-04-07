@@ -195,7 +195,7 @@ function Lightbox({ src, alt, onClose }) {
 
   return (
     <div
-      className="fixed inset-0 z-[60] bg-black/85 flex items-center justify-center animate-fade-in"
+      className="fixed inset-0 z-[80] bg-black/85 flex items-center justify-center animate-fade-in"
       onClick={onClose}
     >
       <img
@@ -225,7 +225,7 @@ export function DigimonModal({ digimon, onClose, digimonList = [] }) {
   return (
     <>
       <div
-        className="fixed inset-0 bg-black/50 dark:bg-black/70 flex items-center justify-center z-50 p-4"
+        className="fixed inset-0 bg-black/50 dark:bg-black/70 flex items-center justify-center z-[70] p-4"
         onClick={(e) => e.target === e.currentTarget && onClose()}
       >
         <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto">
