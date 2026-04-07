@@ -134,9 +134,3 @@ digimon-planner/
 - Digimon images are hotlinked from external sources. If those URLs change, the modal falls back to a text placeholder.
 - Some Digimon have no evolution connections in the game and will return no path.
 - Favorite paths are stored in `localStorage` and persist across sessions. They store the full enriched path data at save time.
-
----
-
-## License
-
-MIT
