@@ -2,7 +2,8 @@
 
 A web app for **Digimon Story: Time Stranger** that finds the shortest evolution path between any two Digimon. Select a starting Digimon and a destination, and the app instantly computes every possible shortest route using BFS pathfinding.
 
-![App Screenshot](./docs/screenshot.png)
+![App Screenshot](./public/screenshot.png)
+![App Screenshot](./public/screenshot2.png)
 
 ---
 
